@@ -1,0 +1,654 @@
+/*************************************************************************//**
+ * @file 
+ *
+ * @mainpage program #3 - Departure Control System
+ * 
+ * @section course_section Course Information 
+ *
+ * @author Cole McCarty
+ * 
+ * @date April 1, 2016
+ * 
+ * @par Professor: 
+ *         Val Manes
+ * 
+ * @par Course: 
+ *         CSC 150 - M001 -  9:00 - 9:50 am
+ * 
+ * @par Location: 
+ *         Classroom Building - 107
+ *
+ * @section program_section Program Information 
+ * 
+ * @details This is an airline seat assignment program.  It checks in 
+ passengers and their luggage, assigns a seat, and computes a service fee for 
+ each passenger.
+ *
+ * The program starts by displaying a menu to choose from. Here the user is 
+ able to choose between checking in, displaying a seat map, and displaying 
+ flight summaries.
+ *
+ * If the check in choice is selected, the user is promted for a flight 
+ flight number.  When a correct flight is entered, they are then asked for 
+ the desired flight class. The user is then asked for the number of bags the 
+passenger will be flying with.  They are then given the option of choosing a 
+seat or having the system assign one for them. After the decision is made, 
+The summary for that passenger is displayed, including flight number, seat, 
+number of bags, and service charge.
+ *
+ * If the display seat map choice is chosen, the user will be asked for a 
+ flight number to display.  The system then displays the seat map for that 
+ flight showing avaiable and taken seats.
+ *
+ *If the display flight summary choice is selected, the user is asked whether 
+ they want just one flight summary displayed or all of them.  If they choose 
+ all, the flight summaries for all of the flights a shown.  If just one 
+ is chosen, the user is promted for a flight number. The system then shows the 
+ summary for that one flight.  These summaries consist of how many passengers 
+ are in each class, the number of bags on each flight, and the total of 
+ service charges per flight.
+ *
+ * @section compile_section Compiling and Usage 
+ *
+ * @par Compiling Instructions: 
+ *      None
+ * 
+ * @par Usage: 
+   @verbatim  
+   c:\> <prog>.exe 
+   d:\> c:\bin\<prog>.exe 
+   @endverbatim 
+ *
+ * @section todo_bugs_modification_section Todo, Bugs, and Modifications
+ * 
+ * @par Modifications and Development Timeline: 
+   @verbatim 
+   Date          Modification 
+   ------------  -------------------------------------------------------------- 
+   Mar 14, 2016  Started program
+				 Created menu switch
+   Mar 22, 2016  Created the seat map array
+   Mar 23, 2016  Created checkin function
+   Mar 28, 2016  Created select_seat function
+				 Created compute_charge function
+   Mar 29, 2016  Created assign_seat function
+   Mar 30, 2016  Created print_summary and print_seat_map functions
+   Mar 31, 2016  Finished Documentation
+   @endverbatim
+ *
+ ******************************************************************************
+
+ *****************************************************************************/
+
+
+#include <iostream>
+#include <cmath>
+#include <iomanip>
+#include <cctype>
+using namespace std;
+
+void fill_array(char seat_array[10][9][4]); //fills seat_array
+char get_menu_choice();	
+	//presents menu, gets user selection, returns only valid selection
+void checkin(int& flight_num, char& flight_class, int& bags, 
+	char seat_array[10][9][4], char& select_seat_choice, int& row_choice, 
+	char& column_choice, int flight_sum_array[10][5]);		
+	// main check-in procedure – gets/validates seat selection, number bags 
+void compute_charge(char flight_class, int bags, 
+	char select_seat_choice, int flight_num, int row_choice, 
+	char column_choice, int flight_sum_array[10][5]);	
+	//compute charge for a passenger
+void select_seat(int flight_num, char seat_array[10][9][4], int& row_choice,
+	char& column_choice, char& flight_class);	
+	//for paid service, checks if a seat selection is available, 
+	//updates seat as taken
+void assign_seat(char seat_array[10][9][4], int flight_num, 
+	char flight_class, int row_choice, char column_choice);	
+	//for free service, assigned a seat from the back, updates seat as taken
+void print_seat_map(char seat_array[10][9][4], int flight_num);	
+	//displays seating map
+void print_summary(int flight_sum_array[10][5]);	
+	//displays summary of a fight
+
+
+
+/**************************************************************************//** 
+ * @author <Cole McCarty>
+ * 
+ * @par Description: 
+ * The main function where most of the program is ran.
+ * 
+ * 
+ * @returns 0 program ran successful.
+ * 
+ *****************************************************************************/
+int main()
+{
+	int row_choice = 0;
+	char column_choice = 0;
+	char choice;
+	int flight_num, bags, total_cost;
+	char flight_class, select_seat_choice;
+	char seat_array[10][9][4]; //allocates memory for seat_array
+	int flight_sum_array[10][5] = { { 0 } }; 
+		//allocates memory for flight_sum_array
+	select_seat_choice = 0;
+	total_cost = 0;
+	fill_array(seat_array); //calls function to fill array
+	
+	do //begins loop to keep menu running as long as Q is not entered
+	{
+		choice = get_menu_choice(); //calls function to get menu choice
+		switch (choice) //switch for menu
+		{
+		case 'C': //check in selected from menu
+		{
+			checkin(flight_num, flight_class, bags, seat_array, 
+				select_seat_choice, row_choice, column_choice, 
+				flight_sum_array); //calls function to check in
+			compute_charge(flight_class, bags, select_seat_choice, 
+				flight_num, row_choice, column_choice, flight_sum_array); 
+				//calls function to compute charge
+			break;
+		}
+		case 'M': //display seat map selected from menu
+		{
+			do //loop to ensure correct flight number
+			{
+				cout << "Select flight to display [1-10]: ";
+				do//loop to ensure correct flight number is obtained
+				{
+					cin >> flight_num;
+					if (flight_num < 1 || flight_num > 10)
+						cout << "Invalid flight number. Please use 1 to 10"
+						<< endl;
+				} while (flight_num < 1 || flight_num >10);
+				print_seat_map(seat_array, flight_num); //prints the seat map
+				if (flight_num < 1 || flight_num>10)
+				{
+					cout << "Invalid Input. Please use 1-10." << endl;
+				}
+			} while (flight_num < 1 || flight_num >10);
+			break;
+		}
+		case 'S': //print summary selected from menu
+		{
+			print_summary(flight_sum_array); //prints summary
+			break;
+		}
+		case 'Q': //quit selected from menu
+			cout << "Enjoy your flight!" << endl;
+		}
+	} while (choice != 'Q'); //end of loop to keep menu running
+	return 0;
+}
+
+
+/**************************************************************************//** 
+ * @author <Cole McCarty>
+ * 
+ * @par Description: 
+ * The function to fill the seat map array for each flight
+ * 
+ * @param[out]  seat_array - The array for the seat map of each flight
+ * 
+ * 
+ *****************************************************************************/
+void fill_array(char seat_array[10][9][4])
+{
+	int i, j;
+	for (i = 0; i < 10; i++)//fills all flights
+		for (j = 0; j < 9; j++)//fills all rows
+		{
+			seat_array[i][j][0] = 'A'; 
+			seat_array[i][j][1] = 'B';
+			seat_array[i][j][2] = 'C';
+			seat_array[i][j][3] = 'D';
+			//these lines put correct character in desired spot
+		}
+}
+
+
+/**************************************************************************//** 
+ * @author <Cole McCarty>
+ * 
+ * @par Description: 
+ * The function that displays the menu and gets the choice of what to run.
+ * 
+ * 
+ * @returns choice program ran successful.
+ * 
+ * 
+ *****************************************************************************/
+char get_menu_choice()
+{
+	char choice;
+	do //begin loop to ensure correct menu choice and display menu
+	{
+		cout << "*** Welcome to Departure Control System ***" << endl;
+		cout << endl;
+		cout << "C - Check in" << endl;
+		cout << "M - Display Seat Map" << endl;
+		cout << "S - Display Flights Summary" << endl;
+		cout << "Q - Quit" << endl;
+		cout << endl;
+		cout << "Your choice: ";
+		cin >> choice;
+		choice = toupper(choice);
+		if (choice != 'C' && choice != 'M' && choice != 'S' && choice != 'Q')
+			//loop to state incorrect choice
+		{
+			cout << endl;
+			cout << choice << " is not a valid choice. Try again."  << endl;
+			cout << endl;
+		}
+	} while (choice != 'C' && choice != 'M' && choice != 'S' && choice != 'Q');
+		//end loop to ensure correct choice
+	return choice;
+}
+
+
+/**************************************************************************//** 
+ * @author <Cole McCarty>
+ * 
+ * @par Description: 
+ * The function to check in. Gets flight number, flight class, number of bags
+ * and the seat.
+ * 
+ * 
+ * @param[out]     flight_num - number of the flight selected
+ * @param[out]     flight_class - selected flight class
+ * @param[out]	   bags - number of bags brought by passenger
+ * @param[in,out]  seat_array - array for seat map
+ * @param[out]	   select_seat_choice - Whether or not passenger selected seat
+ * @param[in,out]  row_choice - choice of row for seating
+ * @param[in,out]  column_choice - choice of column for seating
+ * @param[in,out]  flight_sum_array - array for flight summary 
+ * 
+ * 
+ *****************************************************************************/
+void checkin(int& flight_num, char& flight_class, int& bags, 
+	char seat_array[10][9][4], char& select_seat_choice, int& row_choice, 
+	char& column_choice, int flight_sum_array[10][5])
+{
+	
+	do //Get flight number
+	{
+		cout << "Enter flight number to start check-in: ";
+		cin >> flight_num;
+		if (flight_num < 1 || flight_num > 10) //states incorrect flight number
+		{
+			cout << "Your flight number input is invalid. Flight number must "
+				<< "be between 1 and 10" << endl;
+		}
+	} while (flight_num < 1 || flight_num > 10); 
+		//end loop to get correct flight number
+	
+	cout << "Enter the class of the ticket from (F)irst, (B)usiness, "
+		<< "(E)conomy): ";
+	do  //Get flight class
+	{
+		cin >> flight_class;
+		flight_class = toupper(flight_class);
+		if (flight_class != 'F' && flight_class != 'B' && flight_class != 'E')
+			//state incorrect choice
+		{
+			cout << flight_class << " is not a valid class. Class must be F, "
+				<< "B, or E. Try again." << endl;
+			cout << "Re-enter class: ";
+		}
+	}while (flight_class != 'F' && flight_class != 'B' && flight_class != 'E');
+	//end loop to get correct class choice
+	if (flight_class == 'F')//count first class passengers on flight
+	{
+		flight_sum_array[(flight_num - 1)][0]++;
+	}
+	else if (flight_class == 'B') //count business class passengers on flight
+	{
+		flight_sum_array[(flight_num - 1)][1]++;
+	}
+	else if (flight_class == 'E')//count economy class passengers on flight
+	{
+		flight_sum_array[(flight_num - 1)][2]++;
+	}
+	cout << "Enter the number of checked bags: ";
+	do //Get correct number of bags
+	{
+		cin >> bags;
+		if (bags < 0)//states incorrect bag number
+		{
+			cout << "Your input is invalid. The number must be greater than "
+				<< "or equal to 0" << endl;
+			cout << "Re-enter the number of checked bags: ";
+		}
+	} while (bags < 0); //end loop to get correct number of bags
+	flight_sum_array[(flight_num - 1)][3] += bags; //count bags on each flight
+	do //get choice if passenger would like to choose a seat
+	{
+		cout << "Would you like to select a seat? [Y/N]: ";
+		cin >> select_seat_choice;
+		select_seat_choice = toupper(select_seat_choice);
+		if (select_seat_choice == 'Y') //statment for selecting seat
+			select_seat(flight_num, seat_array, row_choice, 
+				column_choice, flight_class);
+		else if (select_seat_choice == 'N')//statement for being assigned a seat
+			assign_seat(seat_array, flight_num, flight_class,
+				row_choice, column_choice);
+		else //invalid input if not Y or N
+			cout << "Invalid input. Please use Y or N" << endl;
+
+	} while (select_seat_choice != 'Y' && select_seat_choice != 'N');
+		//end loop to get correct input
+
+}
+
+
+/**************************************************************************//** 
+ * @author <Cole McCarty>
+ * 
+ * @par Description: 
+ *Computes the charge for each passenger and displays flight number, seat,
+ *number of bags, and total charge
+ * 
+ * @param[in]      flight_class - flight class
+ * @param[in]      bags - number of bags brought by passenger
+ * @param[in]      select_seat_choice - Whether passenger selected seat or not
+ * @param[in]      flight_num - number of flight chosen
+ * @param[in]      row_choice - choice of row for seating
+ * @param[in]      column_choice - choice of column for seating
+ * @param[in,out]  flight_sum_array - array for flight summary
+ * 
+ * 
+ *****************************************************************************/
+void compute_charge(char flight_class, int bags, 
+	char select_seat_choice, int flight_num, int row_choice, 
+	char column_choice, int flight_sum_array[10][5])
+{
+	int total_cost = 0;
+	if (select_seat_choice == 'Y') //add $10 if choosing seat
+		total_cost = total_cost + 10;
+	if (flight_class == 'F') //allows 3 free bags
+	{
+		if (bags - 3 <= 0)
+			total_cost = total_cost + 0;
+		else if (bags - 3 > 0)
+			total_cost = total_cost + ((bags - 3) * 50);
+	}
+	else if (flight_class == 'B') //allows 2 free bags
+	{
+		if (bags - 2 <= 0)
+			total_cost = total_cost + 0;
+		else if (bags - 2 > 0)
+			total_cost = total_cost + ((bags - 2) * 50);
+	}
+	else if (flight_class == 'E') //allows 1 free bag
+	{
+		if (bags - 1 <= 0)
+			total_cost = total_cost + 0;
+		else if (bags - 1 > 0)
+			total_cost = total_cost + ((bags - 1) * 50);
+	}
+	flight_sum_array[(flight_num - 1)][4] += total_cost;
+	cout << endl;
+	
+	cout << "Flight: " << flight_num << "\t";
+	cout << "Seat: " << row_choice << column_choice << "\t";
+	cout << "Checked bags: " << bags << "\t";
+	cout << "\t Service fee: $" << total_cost << "\t" << endl;
+	cout << endl;
+}
+
+
+/**************************************************************************//** 
+ * @author <Cole McCarty>
+ * 
+ * @par Description: 
+ * Function for the passenger to select a seat
+ * 
+ * @param[in]      flight_num - flight number chosen
+ * @param[in,out]  seat_array - array for seat map
+ * @param[in,out]  row_choice - choice of row for seating
+ * @param[in,out]  column_choice - choice fo column for seating
+ * @param[in,out]  flight_class - choice of class for flight
+ *
+ * 
+ *****************************************************************************/
+void select_seat(int flight_num, char seat_array[10][9][4], int& row_choice, 
+	char& column_choice, char& flight_class)
+{
+	int column_choice_num;
+	char rerun;
+	int lower_row, upper_row;
+	if (flight_class == 'F')//seats available for first class
+	{
+		lower_row = 1;
+		upper_row = 3;
+	}
+	else if (flight_class == 'B')//seats available for business class
+	{
+		lower_row = 4;
+		upper_row = 6;
+	}
+	else if (flight_class == 'E')//seats available for economy class
+	{
+		lower_row = 7;
+		upper_row = 9;
+	}
+	
+	
+	do //loop to ensure availability of seat
+	{
+		do//loop to ensure correct seat is chosen
+		{ 
+			do//loop to ensure selected seat is within desired flight class
+			{
+				print_seat_map(seat_array, (flight_num));
+				rerun = 'N';
+				cout << "Enter seat request by Row Number followed by Column "
+					<< "(A - D)" << endl;
+				cin >> row_choice;
+				cin >> column_choice;
+				if (row_choice < lower_row || row_choice > upper_row)
+					//states incorrect choice
+				{
+					rerun = 'Y';
+					cout << "Please select a seat that is in your desired "
+						<< "flight class" << endl;
+					cout << endl;
+				}
+			} while (rerun == 'Y'); //end loop to ensure desired flight class
+			column_choice = toupper(column_choice);
+			if (row_choice < 1 || row_choice > 9 || (column_choice != 'A' 
+				&& column_choice != 'B' && column_choice != 'C' 
+				&& column_choice != 'D'))
+			{
+				cout << "Your column input is invalid. The columns are "
+					<< "A, B, C, and D. Please start over." << endl;
+				cout << endl;
+			}
+		} while (row_choice < 1 || row_choice > 9 || (column_choice != 'A' 
+			&& column_choice != 'B' && column_choice != 'C' 
+			&& column_choice != 'D'));//end loop to ensure correct seat
+		if (column_choice == 'A')
+			column_choice_num = 0;
+		else if (column_choice == 'B')
+			column_choice_num = 1;
+		else if (column_choice == 'C')
+			column_choice_num = 2;
+		else if (column_choice == 'D')
+			column_choice_num = 3;
+		if (seat_array[(flight_num - 1)][(row_choice - 1)]
+			[column_choice_num] == '*')
+				cout << "Desired seat is unavailable. "
+				<< "Please select another seat." << endl;
+	} while (seat_array[(flight_num - 1)][(row_choice - 1)]
+		[column_choice_num] == '*'); //end loop to ensure seat is available
+	seat_array[(flight_num - 1)][(row_choice - 1)][column_choice_num] = '*';
+
+	
+}
+
+
+/**************************************************************************//** 
+ * @author <Cole McCarty>
+ * 
+ * @par Description: 
+ * Print the seat map including avaiable and taken seats
+ * 
+ * @param[in]     seat_array - array for seat map
+ * @param[in]     flight_num - number of flight to display seat map
+ * 
+ * 
+ *****************************************************************************/
+void print_seat_map(char seat_array[10][9][4], int flight_num)
+{
+	int row;
+	int i;
+	i = flight_num - 1;
+	int j;
+	cout << "Flight " << flight_num << " seat map" << endl;
+	cout << endl;
+		for (j = 0, row = 1; j < 9; j++, row ++)
+		{
+			if (row >= 1 && row <= 3)
+				cout << "First     \t";
+			else if (row >= 4 && row <= 6)
+				cout << "Business  \t";
+			else if (row >= 7 && row <= 9)
+				cout << "Economy   \t";
+			cout << row << "  ";
+			cout << seat_array[i][j][0] << " ";
+			cout << seat_array[i][j][1] << "   ";
+			cout << seat_array[i][j][2] << " ";
+			cout << seat_array[i][j][3];
+			cout << endl;
+		}
+	
+}
+
+
+/**************************************************************************//** 
+ * @author <Cole McCarty>
+ * 
+ * @par Description: 
+ * Automatically assigns an available seat
+ * 
+ * @param[in,out]  seat_array - array for seating
+ * @param[in]      flight_num - number of flight
+ * @param[in]      flight_class - class of seating
+ * @param[in]      row_choice - choice of row for seating
+ * @param[in]      column_choice - choice of column for seating
+ * 
+ * 
+ *****************************************************************************/
+void assign_seat(char seat_array[10][9][4], int flight_num, 
+	char flight_class, int row_choice, char column_choice)
+{
+	char rerun;
+	int i = flight_num - 1;
+	int j, k;
+	k = 3;
+	if (flight_class == 'F') //starts from back first class
+		j = 2;
+	else if (flight_class == 'B') //starts from back business class
+		j = 5;
+	else if (flight_class == 'E')//starts from back economy class
+		j = 8;
+	do //loop to run until available seat
+	{
+		if (seat_array[i][j][k] != '*')
+		{
+			seat_array[i][j][k] = '*';
+			rerun = 'N';
+		}
+		else if (seat_array[i][j][k] = '*')
+		{
+			k = k--;
+			rerun = 'Y';
+			if (k < 0) //if all seats in a row are taken, change row
+			{
+				k = 3;
+				j--;
+			}
+		}
+	} while (rerun == 'Y');
+	row_choice = j + 1;
+	if (k == 0)
+		column_choice = 'A';
+	else if (k == 1)
+		column_choice = 'B';
+	else if (k == 2)
+		column_choice = 'C';
+	else if (k == 3)
+		column_choice = 'D';
+}
+
+
+/**************************************************************************//** 
+ * @author <Cole McCarty>
+ * 
+ * @par Description: 
+ * Prints the flight summary of one or all flights
+ * 
+ * @param[in]      flight_sum_array - array for flight summary
+ * 
+ * 
+ *****************************************************************************/
+void print_summary(int flight_sum_array[10][5])
+{
+	int i, flight;
+	char one_or_all = 'z';
+	do
+	{
+	cout << "Print one flight summary or all [(O)ne/(A)ll]: ";
+	cin >> one_or_all;
+	one_or_all = toupper(one_or_all);
+	if (one_or_all != 'O' && one_or_all != 'A')
+		cout << "Invalid input. Use O or A." << endl;
+	} while (one_or_all != 'O' && one_or_all != 'A');
+	if (one_or_all == 'O') //prints one flight summary
+	{
+		do
+		{
+			cout << "Select flight to display [1-10]: ";
+			cin >> flight;
+			cout << endl;
+			if (flight < 1 || flight > 10)
+				cout << "Invalid flight. Use 1 through 10" << endl;
+		} while (flight < 1 || flight > 10);
+			cout << "Flight " << flight << endl;
+			cout << "Passengers in First Class: "
+				<< flight_sum_array[(flight - 1)][0] << "\t";
+			cout << "Business Class: "
+				<< flight_sum_array[(flight - 1)][1] << "\t";
+			cout << "Economy Class: "
+				<< flight_sum_array[(flight - 1)][2] << endl;
+			cout << endl;
+			cout << "Checked Bags: "
+				<< flight_sum_array[(flight - 1)][3] << "\t";
+			cout << "\t Total Fee $"
+				<< flight_sum_array[(flight - 1)][4] << endl;
+			cout << endl;
+	}
+	else if (one_or_all == 'A') //prints all flight summaries
+	{
+		for (i = 0; i < 10; i++)
+		{
+			cout << endl;
+			cout << "Flight " << (i + 1) << endl;
+			cout << "Passengers in First Class: "
+				<< flight_sum_array[i][0] << "\t";
+			cout << "Business Class: "
+				<< flight_sum_array[i][1] << "\t";
+			cout << "Economy Class: "
+				<< flight_sum_array[i][2] << endl;
+			cout << endl;
+			cout << "Checked Bags: "
+				<< flight_sum_array[i][3] << "\t";
+			cout << "\t Total Fee $"
+				<< flight_sum_array[i][4] << endl;
+
+		}
+		cout << endl;
+	}
+}
