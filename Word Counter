@@ -1,0 +1,380 @@
+/*************************************************************************//**
+ * @file 
+ *
+ * @mainpage Program 4 - Strings and Files
+ * 
+ * @section course_section Course Information 
+ *
+ * @author Cole McCarty
+ * 
+ * @date 4/29/16
+ * 
+ * @par Professor: 
+ *         Val Manes
+ * 
+ * @par Course: 
+ *         CSC 150 - M001 -  9:00 - 9:50 am
+ * 
+ * @par Location: 
+ *         Classroom Building - 107
+ *
+ * @section program_section Program Information 
+ * 
+ * @details This program counts the occurences of each word from an input file
+ * and the displays it in an output file alphabetically.
+ *
+ * This is done by opening up the input file and getting a line.  The line
+ * is then processed word by word, then checking if that word has already
+ * occured.  If it has occured, it will increment the count of that word.
+ * If it is a new word, that new word will be added to the list of words.
+ * After each 20 words that have been added, the list is sorted.  Once
+ * The entire program is read, it also sorts the list.  The list is then
+ * sent to the output file, along with the count of each word.
+ *
+ * @section compile_section Compiling and Usage 
+ *
+ * @par Compiling Instructions: 
+ *      None
+ * 
+ * @par Usage: 
+   @verbatim  
+   c:\> prog4.exe 
+   d:\> c:\bin\prog4.exe 
+   @endverbatim 
+ *
+ * @section todo_bugs_modification_section Todo, Bugs, and Modifications
+ * 
+ * 
+ * 
+ * @par Modifications and Development Timeline: 
+   @verbatim 
+   Date          Modification 
+   ------------  -------------------------------------------------------------- 
+   Apr 13, 2016  Started the program
+   Apr 15, 2016  Completed read_line function
+   Apr 18, 2016  Completed process_line and add_word functions
+   Apr 25, 2016  Completed add_word function
+   Apr 26, 2016  Completed sort_words function
+   Apr 27, 2016  Completed the program
+   Apr 28, 2016  Completed documentation
+   @endverbatim
+ *
+ *****************************************************************************/
+
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <iostream>
+#include <fstream>
+#include <cstring>
+using namespace std;
+
+bool read_line(char current_line[], ifstream& fin);
+void process_line(char current_line[], char current_word[], char word_list[][30],
+					int word_count[], int& word);
+bool extract_word(char current_line[], char current_word[], int& j, 
+					char word_list[][30], int word_count[], int& word);
+void add_word(char current_word[], char word_list[][30], int word_count[], int& word);
+void sort_words(int word, char word_list[][30], int word_count[]);
+bool write_list(ofstream& fout, char word_list[][30], int word_count[], int word);
+
+
+
+/**************************************************************************//** 
+ * @author Cole McCarty
+ * 
+ * @par Description: 
+ * This is the main function, where the majority of the program is done.
+ * 
+ * @param[in]      argc - Count of arguments in command line
+ * @param[in]      argv - The argumnt in the command line at each position
+ * 
+ * @returns 0 program ran successful.
+ * @returns -1 Not enough command line arguments
+ * @returns -2 Error openning input file.
+ * @returns -3 Error openning output file.
+ * 
+ *****************************************************************************/
+int main(int argc, char * argv[])
+{
+	char word_list[10000][30] = { "" };
+	int word_count[10000] = { 0 };
+	char current_line[100];
+	char current_word[30];
+	int lines = 0;
+	int word = 0;
+	int cont;
+	ifstream fin;
+	ofstream fout;
+
+	//checks for correct amount of commad line arguments
+	if (argc != 3 )
+	{
+		cout << "Improper program usage.You must provide input and output ";
+		cout << "file names. Exiting now." << endl;
+		return -1;
+	}
+
+	//opens intput file and ensures it correctly opens. Exits if incorrect
+	fin.open(argv[1]);
+	if (!fin)
+	{
+		cout << "Error opening input file. Exiting now." << endl;
+		return -2;
+	}
+	
+	cont = 1;
+	
+	//loop to continue getting words until file is completely read.
+	do 
+	{
+		cont = read_line(current_line, fin);
+		process_line(current_line, current_word, word_list, word_count, word);
+		lines++;
+	} while (cont);
+	fin.close();
+	
+	//sorts array one last time to ensure completely sorted
+	sort_words(word, word_list, word_count);
+
+	//opens output file and ensures it successfully opens. Exits if unnable to open.
+	fout.open(argv[2]);
+	if (!fout)
+	{
+		cout << "Error opening output file." << endl;
+		return -3;
+	}
+
+	//writes the list of words and counts to the output and closes output file.
+	write_list(fout, word_list, word_count, word);
+	fout.close();
+
+	//displays how many words were successfully written to output file.
+	cout << word << " Words successfully written to " << argv[2] << endl;
+	return 0;
+}
+
+
+/**************************************************************************//** 
+ * @author Cole McCarty
+ * 
+ * @par Description: 
+ * This function receives the input file and reads it line by line
+ * passing it the the process_line function 
+ *
+ * @param[out]    current_line - The line that is read from the file
+ * @param[in]     fin - The file that is being read
+ * 
+ * @returns true the function got a line
+ * @returns false the function did not get a line
+ * 
+ *****************************************************************************/
+bool read_line(char current_line[], ifstream& fin)
+{
+	if (fin.getline(current_line, 80))
+		return true;
+	return false;
+}
+
+
+/**************************************************************************//** 
+ * @author Cole McCarty
+ * 
+ * @par Description: 
+ * This function is a loop to keep extracting words until the line is over
+ * 
+ * @param[in]      current_line - The current line that is read from the file
+ * @param[out]     current_word - current word that was extracted from the line
+ * @param[in,out]  word_list - The list of words in the array
+ * @param[in,out]  word_count - The number of uses of each word
+ * @param[out]     word - The count of words in word_list
+ * 
+ * 
+ *****************************************************************************/
+void process_line(char current_line[], char current_word[], char word_list[][30],
+					int word_count[], int& word)
+{
+	int character = 0;
+	
+	//loop to keep extracting words from the line until end of line.
+	while (character < strlen(current_line))
+	{
+		extract_word(current_line, current_word, character, word_list, 
+						word_count, word);
+	}
+}
+
+
+/**************************************************************************//** 
+ * @author Cole McCarty
+ * 
+ * @par Description: 
+ * This function extracts each word from the current line.  It then checks
+ * the end of each word for any characters that are not letters and 
+ * overwrights them.
+ * 
+ * @param[in]      current_line - The current line that is read from the file
+ * @param[out]     current_word - current word that was extracted from the line
+ * @param[in,out]  j - The current position in the line
+ * @param[in,out]  word_list - The list of words in the array
+ * @param[in,out]  word_count - The number of uses of each word
+ * @param[in,out]  word - The count of words in word_list
+ *
+ * @returns true function successfully extracted word
+ * @returns false function did not extract a word
+ * 
+ *****************************************************************************/
+bool extract_word(char current_line[], char current_word[], int& j, 
+					char word_list[][30], int word_count[], int& word)
+{
+	int i;
+	int z;
+	int words_in_list;
+	int word_length;
+	bool overwrite = false;
+
+	//overwrites current word to make it empty.
+	for (z = 0; z < 30; z++)
+		current_word[z] = '\0';
+
+	//loop to extract word
+	for (i = 0, word_length = 0; current_line[j] != ' ' && 
+			j < strlen(current_line); j++)
+	{
+	
+		if (isalpha(current_line[j]))
+		{
+			current_word[i] = current_line[j];
+			word_length++;
+			i++;
+			overwrite = true;
+		} 
+	}
+
+	//loop to overwrite any non-letters after the word
+	if (overwrite = true)
+	{
+		while (!isalpha(current_word[(word_length - 1)]))
+		{
+			current_word[(word_length - 1)] = '\0';
+		}
+
+		add_word(current_word, word_list, word_count, word);
+		j++;
+		return true;
+	}
+	return false;
+}
+
+
+/**************************************************************************//** 
+ * @author Cole McCarty
+ * 
+ * @par Description: 
+ * This function adds the extracted word either to the count of that word
+ * or creates a new word in the list.
+ * 
+ * @param[in]      current_word - current word that was extracted from the line
+ * @param[in,out]  word_list - The list of words in the array
+ * @param[in,out]  word_count - The number of uses of each word
+ * @param[in,out]  word - number of words in the list
+ * 
+ *****************************************************************************/
+void add_word(char current_word[], char word_list[][30], int word_count[], int& word)
+{
+	bool stop = false;
+	int pos = 0;
+	int word_len = 0;
+	int check;
+
+	//loop to check if the current word has already been added
+	for (check = 0; check <= word && stop == false; check++)
+	{
+		if (_stricmp(current_word, word_list[check]) == 0)//add one to word count
+		{
+			word_count[check]++;
+			stop = true;
+			return;
+		}
+	}
+
+	//adds the new word to the list if not already used
+	word_len = strlen(current_word);
+	for (pos = 0; pos < word_len; pos++)
+	{
+		word_list[word][pos] = current_word[pos];
+	}
+	word++;
+	word_count[word - 1]++;
+
+	//checks to see if 20th word. If so, sort list.
+	if ((word + 1) % 20 == 0)
+		sort_words(word, word_list, word_count);
+}
+
+
+/**************************************************************************//** 
+ * @author Cole McCarty
+ * 
+ * @par Description: 
+ * This is the function that sorts the word list in alphabetical order.
+ * 
+ * @param[in]      word - number of words in the list
+ * @param[in,out]  word_list - The list of words in the array
+ * @param[in,out]  word_count - The number of uses of each word
+ * 
+ *****************************************************************************/
+void sort_words(int word, char word_list[][30], int word_count[])
+{
+	int i, j;
+	char temp[30] = { "" };
+	int temp_num = 0;
+
+	//bubble sort
+	for (i = 0; i < word - 1; i++)
+	{
+		for (j = 0; j < word - 1 - i; j++)
+		{
+			if ((_stricmp(word_list[j], word_list[j + 1])) > 0)
+			{
+				strcpy(temp, word_list[j]);
+				temp_num = word_count[j];
+				strcpy(word_list[j], word_list[j + 1]);
+				word_count[j] = word_count[j + 1];
+				strcpy(word_list[j + 1], temp);
+				word_count[j + 1] = temp_num;
+			}
+		}
+	}
+}
+
+
+/**************************************************************************//** 
+ * @author Cole McCarty
+ * 
+ * @par Description: 
+ * This function writes the list of words to the output file
+ * 
+ * @param[in]      fout - The file being output to.
+ * @param[in]      word_list - The list of words in the array
+ * @param[in]      word_count - The number of uses of each word
+ * @param[in]      word - number of words in the list
+ *
+ * @returns true data successfully written to file
+ * @returns false data was not successfully written to file
+ * 
+ *****************************************************************************/
+bool write_list(ofstream& fout, char word_list[][30], int word_count[], int word)
+{
+	int row;
+	bool retrn = false;
+	for (row = 0; row < word; row++)
+	{
+		if (fout << word_list[row])
+		{
+			fout << " " << word_count[row];
+			fout << endl;
+			retrn = true;
+		}
+	}
+	return retrn;
+}
